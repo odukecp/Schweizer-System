@@ -22,9 +22,7 @@ cd Schweizer-System/backend
 
 3. Notwendige Module installieren (Das kann beim ersten Mal etwas dauern)
 ```bash
-if [ ! -d "node_modules"]; then
 npm install
-fi
 ```
 
 4. Den backend-Server starten
@@ -42,6 +40,5 @@ Der backend-Server kann im ersten Terminal mit Ctrl + C beendet werden.
 ## 3. Good-To-Know
 1. Ein direkter Zugriff auf die Datenbank ist wie folgt möglich
 ```bash
-cd Schweizer-System/backend
-sqlite3 database.db
+sqlite3 Schweizer-System/backend/database.db
 ```
