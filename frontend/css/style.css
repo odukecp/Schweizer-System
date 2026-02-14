@@ -1,0 +1,266 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root{
+  --bg-0: #010201;   /* near-black */
+  --bg-1: #0b0f0b;   /* slightly lifted black */
+  --ink:  #dbeee0;   /* pale mint text */
+  --muted:#a6cbae;   /* mint highlight */
+  --moss: #51714d;   /* moss green */
+  --moss-2:#475b35;  /* deeper olive */
+  --moss-3:#374b29;  /* darkest olive */
+  --blood:#d93a03;   /* dominant red */
+  --blood-2:#e24105; /* brighter red */
+  --rust: #a02b05;   /* dark red/brown */
+  --rust-dark: #842807;
+  --shadow: rgba(0,0,0,.65);
+  --glass: rgba(255,255,255,.06);
+  --glass-2: rgba(255,255,255,.10);
+  --ring: rgba(166,203,174,.28);
+}
+
+/* Hintergrund */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+
+    background-image: url("../assets/checkerboard.gif");
+    background-size: 200px;
+    background-position: center;
+    background-repeat: repeat;
+
+    /* transform: scaleX(-1); */
+    z-index: -1;
+}
+
+/* Abdunklung */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: -1;
+}
+
+/* Inhalt */
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #000;
+}
+
+
+
+
+input[type="text"]{
+    background: rgba(255, 255, 255, 0.1); 
+    border: transparent;
+    border-radius: 8px;
+    padding: 10px 15px;
+    color: #e6f2ea;
+    font-size: 1rem;
+    width: 90%;
+    transition: 0.3s;
+    outline: none;
+    margin: 12px;
+}
+
+/* Hover */
+input[type="text"]:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Focus */
+input[type="text"]:focus {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Chrome Autofill Fix – all states */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    box-shadow: 0 0 0 1000px transparent inset !important;
+
+    -webkit-text-fill-color: #e6f2ea !important;
+    caret-color: #e6f2ea !important;
+
+    border-radius: 8px;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+
+input[type="submit"] {
+    background: linear-gradient(145deg, var(--moss), var(--moss-2)); /* Jungle-Grün Verlauf */
+    color: #e6f2ea;
+    border: 1px solid var(--muted);   /* goldener Rand */
+    border-radius: 24px;
+    padding: 12px 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    width: auto;
+}
+
+.delete-btn {
+    padding: 0px;
+    background: transparent;
+    border: 0px;
+}
+
+table, th, td {
+    border: 0px solid #fff;
+    border-collapse: collapse;
+}
+
+thead {
+    font-weight: bold;
+}
+
+table {
+    width: 100%;
+}
+
+td {
+    padding: 5px;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-weight: 300;
+}
+
+.content{
+    margin-top: 5vh;
+    margin-bottom: 5vh;
+}
+
+.wrap, .popup-content {
+  margin-top: 5vh;
+  padding: 50px 20px 50px 20px;
+  width: 75vw;
+  min-height: 10vh;
+  border: 1px solid rgba(166,203,174,.14);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px var(--shadow);
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+}
+
+.footer{
+    align-self: flex-end;
+    width: 95vw;
+    color: var(--rust);
+    font-size: 5vh;
+    text-align: left;
+    bottom: 0;
+    left: 5vh;
+    position: fixed;
+    z-index: -1;
+}
+
+p {
+	padding-bottom: 2vh;
+    font-size: 1.25em;
+}
+
+h2 {
+	color: var(--ink);
+	font-size: 2.25em;
+}
+
+.coloumn {
+    float: left;
+    width: 25%;
+}
+
+.row:after {
+    content: "";
+    display: table;
+        clear: both;
+}
+
+@media screen and (max-width: 1400px) {
+    .coloumn {
+        width: 50%;
+    }
+}
+
+@media screen and (max-width: 700px) {
+    .coloumn {
+        width: 100%;
+    }
+}
+
+.panel {
+  display: none;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.accordion:after {
+  content: '\02795'; /* Unicode character for "plus" sign (+) */
+  font-size: 2.25em;
+  color: var(--ink);
+  float: right;
+  margin-left: 5px;
+}
+
+.active:after {
+  content: "\2796"; /* Unicode character for "minus" sign (-) */
+}
+
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.popup h2 {
+  margin-top: 0;
+  color: #fff;
+}
+.popup p {
+  color: #ddd;
+  margin-bottom: 20px;
+}
+.popup-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.popup button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.popup .cancel {
+    background-color: #c00 !important;
+    color: #fff;
+    font-weight: bold;
+}
+.popup .confirm {
+    background-color: #0a0;
+    color: #fff;
+    font-weight: bold;
+    margin-left: 20px;
+}
+
