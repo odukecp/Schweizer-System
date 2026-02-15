@@ -8,34 +8,26 @@ Aktuell beinhaltet das Programm nur eine funktionierende Spielerdatenbank.
 
 ## 2. Installation
 
-Um das Programm zu verwenden sind einige Schritte notwendig:
+Um das Programm zu verwenden sind folgende Schritte notwendig:
 
 1. Das Repository klonen
 ```bash
 git clone https://github.com/odukecp/Schweizer-System
 ```
 
-2. Zum Projekt navigieren
+2. In den Projektordner navigieren (oder im Terminal)
 ```bash
-cd Schweizer-System/backend
-````
-
-3. Notwendige Module installieren (Das kann beim ersten Mal etwas dauern)
-```bash
-npm install
+cd Schweizer-System
 ```
 
-4. Den backend-Server starten
+3. Im Projektordner das Programm durch doppelklicken von `start.command` starten (oder im Terminal)
 ```bash
-npm start
-````
-
-5. Das User-Interface im Browser öffnen (neues Terminal)
-```bash
-open Schweizer-System/frontend/index.html
+./start.command
 ```
-
-Der backend-Server kann im ersten Terminal mit Ctrl + C beendet werden.
+Der backend-Server kann durch doppelklicken von `stop.command` beendet werden (oder im Terminal)
+```bash
+./stop.command
+```
 
 ## 3. Good-To-Know
 1. Ein direkter Zugriff auf die Datenbank ist wie folgt möglich
