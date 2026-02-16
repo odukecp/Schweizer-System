@@ -7,3 +7,6 @@ logs/
 
 *.DS_Store
 *.db
+
+example_players.csv
+edge_case.csv

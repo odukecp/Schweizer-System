@@ -31,7 +31,7 @@ async function htmlSetup() {
     const setupWrap = document.createElement("div");
     setupWrap.className = "setup";
 
-    //setup.addPlayer
+    //setup.addPlayer.Input
     const addPlayerWrap = document.createElement("div");
     addPlayerWrap.className = "wrap";
     
@@ -50,10 +50,10 @@ async function htmlSetup() {
     const playerInput = document.createElement("form");
     playerInput.addEventListener("submit", async (e) => {
         try {
-        await addPlayer();
-        log("Player added successfully");
+        await addPlayerFromInput();
+        console.log("Player added successfully");
         } catch (err) {
-        log("Error: " + err.message);
+        alert("Error: " + err.message);
         }
     });
 
@@ -92,6 +92,53 @@ async function htmlSetup() {
     submitButton.value = "Hinzufügen";
     playerInput.appendChild(submitButton);
     addPlayerPanel.appendChild(playerInput);
+
+    //setup.addPlayer.File
+
+    const addPlayersViaFile = document.createElement("div")
+
+    const addPlayersViaFileAccordion = document.createElement("div");
+    addPlayersViaFileAccordion.className = "accordion small";
+
+    const addPlayersViaFileHeader = document.createElement("h4");
+    addPlayersViaFileHeader.innerHTML = "Spieler importieren";
+
+    addPlayersViaFileAccordion.appendChild(addPlayersViaFileHeader);
+    addPlayersViaFile.appendChild(addPlayersViaFileAccordion);
+
+    const addPlayersViaFilePanel = document.createElement("div");
+    addPlayersViaFilePanel.className = "panel";
+
+    const addPlayersViaFileForm = document.createElement("form");
+    const addPlayersViaFileInput = document.createElement("input")
+    addPlayersViaFileInput.type = "file";
+    addPlayersViaFileInput.accept = ".csv";
+    addPlayersViaFileInput.enctype = "multipart/form-data";
+    addPlayersViaFileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const players = results.data;
+                console.log("Parsed players:", players);
+                addPlayersFromFile(players);
+            },
+            error: (error) => {
+                console.error("Error parsing CSV:", error);
+                alert("Error parsing CSV. Please check your file format.");
+            }
+        })
+    })
+    addPlayersViaFileForm.appendChild(addPlayersViaFileInput);
+    addPlayersViaFilePanel.appendChild(addPlayersViaFileForm);
+
+    addPlayersViaFile.appendChild(addPlayersViaFilePanel);    
+
+
+    addPlayerPanel.appendChild(addPlayersViaFile);
+
     addPlayerWrap.appendChild(addPlayerPanel);
     setupWrap.appendChild(addPlayerWrap);
 
@@ -162,7 +209,7 @@ async function htmlSetup() {
 
         createPopup (
             "Spieler/in Löschen",
-            "Möchten Sie diese/n Spieler/in wirklich löschen, diese Aktion kann nicht rückgängig gemacht werden.",
+            "Möchten Sie diese/n Spieler/in wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
             () => {
                 deletePlayer(idToDelete);
                 
@@ -171,6 +218,20 @@ async function htmlSetup() {
     })
 
     playerTablePanel.appendChild(playerTable);
+
+    const deleteAllPlayersButton = document.createElement("button");
+    deleteAllPlayersButton.innerHTML = "Alle Spieler löschen";
+    deleteAllPlayersButton.addEventListener("click", () => {
+        createPopup(
+            "Alle Spieler Löschen",
+            "Möchten Sie wirkliche alle Spieler/innen löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+            () => {
+                deleteAllPlayers();
+            }
+        )
+    })
+
+    playerTablePanel.appendChild(deleteAllPlayersButton);
     
     playerTableWrap.appendChild(playerTableAccordion);
     playerTableWrap.appendChild(playerTablePanel);
@@ -241,36 +302,68 @@ function createPopup (title, message, onConfirm) {
 
 function setupAccordions () {
     const accordions = document.getElementsByClassName("accordion");
-    // console.log(accordions);
-    
+
+    const savedState = JSON.parse(localStorage.getItem("accordionState"));
+
     for (let i = 0; i < accordions.length; i++) {
+        const panel = accordions[i].nextElementSibling;
+
+        if (savedState[i] === "open") {
+            accordions[i].classList.add("active");
+            panel.style.display = "block";
+        } else {
+            accordions[i].classList.remove("active");
+            panel.style.display = "none";
+        }
         accordions[i].addEventListener("click", () => {
-            // console.log(accordions[i]);
-            accordions[i].classList.toggle("active");
-            const panel = accordions[i].nextElementSibling;
-            if (panel.style.display === "block") {
-                panel.style.display = "none";
-            } else {
-                panel.style.display = "block";
-            }
+            const isActive = accordions[i].classList.toggle("active");
+            panel.style.display = isActive ? "block" : "none";
+            
+            savedState[i] = isActive ? 'open' : 'closed';
+            localStorage.setItem('accordionState', JSON.stringify(savedState));
         });
     }
 }
 
-async function addPlayer() {
+async function addPlayerFromInput() {
     const input_firstName = document.getElementById("input_firstName").value;
     const input_lastName = document.getElementById("input_lastName").value;
     const input_rating = parseFloat(document.getElementById("input_rating").value);
     const input_club = document.getElementById("input_club").value;
 
-    const res = await fetch(`${API}add-player?firstName=${input_firstName}&lastName=${input_lastName}&rating=${input_rating}&club=${input_club}`, {
+    sendPlayerToBackend(input_firstName, input_lastName, input_rating, input_club);
+}
+
+async function addPlayersFromFile(players) {
+    players.forEach(player => {
+        const firstName = player.firstName;
+        const lastName = player.lastName;
+        let rating = player.rating;
+        if (!rating) {
+            rating = 800;
+        } else {
+            rating = parseInt(rating);
+        }
+        const club = player.club;
+
+        if(!firstName || !lastName) {
+            console.log(`CSV-File contains invalid data, cannot add player "${firstName}" "${lastName}" with "${rating}" DWZ from "${club}"`);
+        }
+
+        sendPlayerToBackend(firstName, lastName, rating, club);        
+    })
+    console.log("Added players to the database");
+}
+
+async function sendPlayerToBackend(firstName, lastName, rating, club) {
+    const res = await fetch(`${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`, {
         method: "POST",
     });
-    console.log(`fetched ${API}add-player?firstName=${input_firstName}&lastName=${input_lastName}&rating=${input_rating}&club=${input_club}`)
+    console.log(`fetched ${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`)
 
     if (!res.ok) {
-        const error = await res.json();
-        alert(error.error);
+        const text = await res.text();
+        alert(text);
         return;
     }
 
@@ -305,6 +398,17 @@ async function deletePlayer(idToDelete) {
             method: "DELETE"
         });
 
+    if (!res.ok) {
+        const text = await res.text();
+        alert(text);
+        throw new Error(text);
+    }
+}
+
+async function deleteAllPlayers() {
+    const res = await fetch(`${API}delete-all-players`, {
+        method: "DELETE"
+    });
     if (!res.ok) {
         const text = await res.text();
         alert(text);

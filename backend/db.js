@@ -51,7 +51,7 @@ function addPlayerDB(firstName, lastName, rating, club) {
     VALUES ("${firstName}", "${lastName}", ${rating}, "${club}");
   `;
 
-  console.log(`Adding player ${firstName} ${lastName} with ${rating} DWZ from ${club}`);
+  console.log(`Adding player ${firstName} ${lastName} with ${rating} DWZ from "${club}"`);
   db.run(sql, (err) => {
     if (err) console.error(err.message);
   });
@@ -68,11 +68,22 @@ function deletePlayerDB(idToDelete) {
   });
 }
 
+function deleteAllPlayersDB() {
+  const sql = `
+    DELETE FROM players WHERE id>-1;
+  `
+  console.log("Deleting all players");
+  db.run(sql, (err) => {
+    if (err) console.error(err.message);
+  });
+}
+
 module.exports = {
   db,
   createRound,
   addPlayerDB,
   deletePlayerDB,
+  deleteAllPlayersDB,
 };
 
 

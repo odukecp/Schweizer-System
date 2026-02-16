@@ -67,6 +67,12 @@ app.delete("/api/delete-player", (req, res) => {
   res.json({ message: `Deleted player with id ${idToDelete}` });
 })
 
+app.delete("/api/delete-all-players", (req, res) => {
+  db.deleteAllPlayersDB();
+
+  res.json({ message: "Deleted all players"});
+})
+
 
 
 // ------------------------------------------------
