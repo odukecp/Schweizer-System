@@ -1,16 +1,16 @@
 {
-  "name": "schweizer-system",
-  "version": "1.0.0",
-  "description": "## 1. Überblick",
-  "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "papaparse": "^5.5.3",
-    "sqlite3": "^5.1.7"
-  }
+    "name": "schweizer-system",
+    "version": "0.0.0",
+    "description": "## 1. Überblick",
+    "main": "index.js",
+    "scripts": {},
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "cors": "^2.8.6",
+        "express": "^5.2.1",
+        "papaparse": "^5.5.3",
+        "sqlite3": "^5.1.7"
+    }
 }
