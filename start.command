@@ -41,5 +41,7 @@ fi
     fi
 ) &
 
+sleep 2
+
 # Open the frontend in the default browser
 open frontend/index.html

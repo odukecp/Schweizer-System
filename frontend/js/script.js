@@ -303,7 +303,7 @@ function createPopup (title, message, onConfirm) {
 function setupAccordions () {
     const accordions = document.getElementsByClassName("accordion");
 
-    const savedState = JSON.parse(localStorage.getItem("accordionState"));
+    const savedState = JSON.parse(localStorage.getItem("accordionState")) || {};
 
     for (let i = 0; i < accordions.length; i++) {
         const panel = accordions[i].nextElementSibling;
