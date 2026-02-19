@@ -46,7 +46,6 @@ async function htmlSetup() {
     playerInput.addEventListener('submit', async (e) => {
         try {
             await addPlayerFromInput();
-            console.log('Player added successfully');
         } catch (err) {
             alert('Error: ' + err.message);
         }
@@ -228,6 +227,10 @@ async function htmlSetup() {
     playerTableWrap.appendChild(playerTablePanel);
     setupWrap.appendChild(playerTableWrap);
 
+    window.addEventListener('beforeunload', () => {
+        localStorage.setItem('scrollPosition', window.scrollY);
+    });
+
     contentDiv.appendChild(document.createComment('header-div'));
     contentDiv.appendChild(headerWrap);
 
@@ -235,6 +238,7 @@ async function htmlSetup() {
     contentDiv.appendChild(setupWrap);
 
     setupAccordions();
+    restoreScrollPosition();
 }
 
 htmlSetup();
@@ -307,100 +311,266 @@ function setupAccordions() {
     }
 }
 
-async function addPlayerFromInput() {
-    const input_firstName = document.getElementById('input_firstName').value;
-    const input_lastName = document.getElementById('input_lastName').value;
-    const input_rating = parseFloat(document.getElementById('input_rating').value);
-    const input_club = document.getElementById('input_club').value;
+function restoreScrollPosition() {
+    const savedScrollPosition = localStorage.getItem('scrollPosition');
+    if (savedScrollPosition) window.scrollTo(0, parseInt(savedScrollPosition));
+}
 
-    sendPlayerToBackend(input_firstName, input_lastName, input_rating, input_club);
+function extractErrorFromHTML(html) {
+    const match = html.match(/<pre>(.*?)<\/pre>/);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return html;
+}
+
+async function addPlayerFromInput() {
+    try {
+        const input_firstName = document.getElementById('input_firstName').value;
+        const input_lastName = document.getElementById('input_lastName').value;
+        const input_rating = parseFloat(document.getElementById('input_rating').value);
+        const input_club = document.getElementById('input_club').value;
+
+        sendPlayerToBackend(input_firstName, input_lastName, input_rating, input_club);
+    } catch (err) {
+        console.error('addPlayerFromInput() failed:', err);
+    }
 }
 
 async function addPlayersFromFile(players) {
-    players.forEach((player) => {
-        const firstName = player.firstName;
-        const lastName = player.lastName;
-        let rating = player.rating;
-        if (!rating) {
-            rating = 800;
-        } else {
-            rating = parseInt(rating);
-        }
-        const club = player.club;
+    try {
+        invalidPlayerCounter = 0;
+        players.forEach((player) => {
+            const firstName = player.firstName;
+            const lastName = player.lastName;
+            let rating = player.rating;
+            if (!rating) {
+                rating = 800;
+            } else {
+                rating = parseInt(rating);
+            }
+            const club = player.club;
 
-        if (!firstName || !lastName) {
-            console.log(
-                `CSV-File contains invalid data, cannot add player "${firstName}" "${lastName}" with "${rating}" DWZ from "${club}"`,
-            );
+            if (!firstName || !lastName) {
+                console.log(
+                    `CSV-File contains invalid data, cannot add player "${firstName}" "${lastName}" with "${rating}" DWZ from "${club}"`,
+                );
+                invalidPlayerCounter++;
+            } else {
+                sendPlayerToBackend(firstName, lastName, rating, club);
+            }
+        });
+        console.log('Adding players to the database');
+        if (invalidPlayerCounter > 0) {
+            if (invalidPlayerCounter === 1) {
+                alert(
+                    `${invalidPlayerCounter} Spieler/in konnte nicht hinzugefügt werden, da Vor- und/oder Nachname gefehlt haben`,
+                );
+            } else {
+                alert(
+                    `${invalidPlayerCounter} Spieler/innen konnten nicht hinzugefügt werden, da Vor- und/oder Nachname gefehlt haben`,
+                );
+            }
         }
-
-        sendPlayerToBackend(firstName, lastName, rating, club);
-    });
-    console.log('Added players to the database');
+    } catch (err) {
+        console.error('addPlayersFromFile() failed:', err);
+    }
 }
 
 async function sendPlayerToBackend(firstName, lastName, rating, club) {
-    const res = await fetch(
-        `${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`,
-        {
-            method: 'POST',
-        },
-    );
-    console.log(
-        `fetched ${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`,
-    );
+    try {
+        const res = await fetch(
+            `${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`,
+            {
+                method: 'POST',
+            },
+        );
+        // console.log(`fetched ${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`);
 
-    if (!res.ok) {
-        const text = await res.text();
-        alert(text);
-        return;
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+            return;
+        }
+
+        const data = await res.json();
+        console.log(data.message);
+    } catch (err) {
+        console.error('sendPlayerToBackend() failed:', err);
     }
-
-    const data = await res.json();
-    console.log(data.message);
-    loadPlayers();
-}
-
-async function addRound(roundIndex) {
-    const res = await fetch(`${API}create-round?index=${roundIndex}`, {
-        method: 'POST',
-    });
-
-    const data = await res.json();
-    console.log(data);
 }
 
 async function loadPlayers() {
-    const res = await fetch(`${API}players`);
+    try {
+        const res = await fetch(`${API}players`);
 
-    if (!res.ok) {
-        const text = await res.text();
-        alert(text);
-        throw new Error(text);
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+        }
+        return res.json();
+    } catch (err) {
+        console.error('loadPlayers() failed:', err);
     }
+}
 
-    return res.json();
+async function loadRanking() {
+    try {
+        const res = await fetch(`${API}ranking`);
+
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+        }
+
+        return res.json();
+    } catch (err) {
+        console.error('loadRanking() failed:', err);
+    }
+}
+
+async function getTables() {
+    try {
+        const res = await fetch(`${API}tables`);
+
+        if (!res.ok) {
+            const text = await res.text();
+            console.error(text);
+            throw new Error(text);
+        }
+
+        return res.json();
+    } catch (err) {
+        console.error('getTables() failed:', err);
+    }
 }
 
 async function deletePlayer(idToDelete) {
-    const res = await fetch(`${API}delete-player?id=${idToDelete}`, {
-        method: 'DELETE',
-    });
+    try {
+        const res = await fetch(`${API}delete-player?id=${idToDelete}`, {
+            method: 'DELETE',
+        });
 
-    if (!res.ok) {
-        const text = await res.text();
-        alert(text);
-        throw new Error(text);
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(`API Error (${res.status}): ${errorMessage}`);
+        } else {
+            console.log(JSON.parse(await res.text()).message, `(Status: ${res.status})`);
+        }
+    } catch (err) {
+        console.error('deletePlayer() failed:', err);
     }
 }
 
 async function deleteAllPlayers() {
-    const res = await fetch(`${API}delete-all-players`, {
-        method: 'DELETE',
-    });
-    if (!res.ok) {
-        const text = await res.text();
-        alert(text);
-        throw new Error(text);
+    try {
+        const res = await fetch(`${API}delete-all-players`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(`API Error (${res.status}): ${errorMessage}`);
+        } else {
+            console.log(JSON.parse(await res.text()).message, `(Status: ${res.status})`);
+        }
+    } catch (err) {
+        console.error('deleteAllPlayers() failed:', err);
+    }
+}
+
+async function addPairing(round, board, id1, id2) {
+    try {
+        const res = await fetch(
+            `${API}add-pairing?round=${round}&board=${board}&id1=${id1}&id2=${id2}`,
+            {
+                method: 'POST',
+            },
+        );
+
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(`API Error (${res.status}): ${errorMessage}`);
+        }
+    } catch (err) {
+        console.error('addPairing() failed:', err);
+    }
+}
+
+async function createPairingTable() {
+    try {
+        const res = await fetch(`${API}create-pairing-table`, {
+            method: 'POST',
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+        }
+    } catch (err) {
+        console.error('createPairingTable() failed:', err);
+    }
+}
+
+async function deleteAllPairings() {
+    try {
+        const res = await fetch(`${API}delete-all-pairings`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(`API Error (${res.status}): ${errorMessage}`);
+        } else {
+            console.log(JSON.parse(await res.text()).message, `(Status: ${res.status})`);
+        }
+    } catch (err) {
+        console.error('deleteAllPairings() failed:', err);
+    }
+}
+
+async function createRanking() {
+    try {
+        const res = await fetch(`${API}create-ranking`, {
+            method: 'POST',
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+        }
+    } catch (err) {
+        console.error('createRanking() failed:', err);
+    }
+}
+
+async function createFirstRound() {
+    try {
+        await createRanking();
+        await createPairingTable();
+        await deleteAllPairings();
+        ranking = await loadRanking();
+
+        if (ranking.length % 2 === 1) {
+            await sendPlayerToBackend('Spielfrei', 'Spielfrei', 0, '');
+            await createRanking();
+            await createPairingTable();
+            ranking = await loadRanking();
+        }
+
+        half = parseInt(ranking.length / 2);
+        for (let i = 1; i < half + 1; i++) {
+            console.log(1, i, ranking[i - 1].id, ranking[i + half - 1].id);
+            await addPairing(1, i, ranking[i - 1].id, ranking[i + half - 1].id);
+        }
+    } catch (err) {
+        console.error(err);
     }
 }
