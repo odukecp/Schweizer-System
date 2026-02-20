@@ -19,8 +19,19 @@ async function htmlSetup() {
     const headerWrap = document.createElement('div');
     headerWrap.className = 'wrap header';
     const header = document.createElement('h1');
-    header.innerHTML = 'Schweizer System Turnier-Managment';
+    header.innerHTML = 'Duke-Chess Turnier-Managment';
     headerWrap.appendChild(header);
+
+    const logoContainer = document.createElement('div');
+    logoContainer.className = 'logo-container';
+
+    const logo = document.createElement('img');
+    logo.className = 'logo';
+    logo.src = 'assets/DukeChessLogo_v2_tsp.png';
+    logo.alt = 'Duke-Chess Logo';
+
+    logoContainer.appendChild(logo);
+    headerWrap.appendChild(logoContainer);
 
     // setup
 
@@ -75,9 +86,6 @@ async function htmlSetup() {
         playerInputField.id = `input_${inputField[0]}`;
         playerInputField.placeholder = inputField[1];
         playerInputField.type = 'text';
-        if (inputField[0] == 'rating') {
-            playerInputField.value = '800';
-        }
         playerInputColoumn.appendChild(playerInputField);
         playerInputWrapper.appendChild(playerInputColoumn);
     });
@@ -328,8 +336,10 @@ async function addPlayerFromInput() {
     try {
         const input_firstName = document.getElementById('input_firstName').value;
         const input_lastName = document.getElementById('input_lastName').value;
-        const input_rating = parseFloat(document.getElementById('input_rating').value);
+        let input_rating = parseFloat(document.getElementById('input_rating').value);
         const input_club = document.getElementById('input_club').value;
+
+        if (!input_rating) input_rating = 800;
 
         sendPlayerToBackend(input_firstName, input_lastName, input_rating, input_club);
     } catch (err) {

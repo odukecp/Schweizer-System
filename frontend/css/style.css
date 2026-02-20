@@ -289,3 +289,15 @@ h2 {
     font-weight: bold;
     margin-left: 20px;
 }
+
+.logo-container {
+    position: absolute;
+    right: 32px;
+    top: 18.5px;
+}
+
+.logo {
+    display: block;
+    height: 100px;
+    width: auto;
+}
