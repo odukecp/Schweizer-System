@@ -9,20 +9,26 @@ const app = express();
 
 app.use(
     cors({
-        origin: ['http://localhost:5500', 'null'], // Replace with your frontend's exact origin
+        origin: ['http://localhost:5500', 'null'],
         methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
         allowedHeaders: ['Content-Type'],
-        credentials: true, // Allow credentials (cookies, auth headers)
+        credentials: true,
     }),
 );
+
+app.options('/api/add-player', (req, res) => {
+    res.set('Access-Control-Allow-Origin', 'http://localhost:5500');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.status(204).send();
+});
 
 app.use(express.json());
 
 // ------------------------------------------------
 // -------------------- GET -----------------------
 // ------------------------------------------------
-
-console.log(path.join(__dirname, '../frontend/index.html'));
 
 app.get('/api/players', (req, res) => {
     db.db.all('SELECT * FROM players', [], (err, rows) => {
@@ -45,11 +51,31 @@ app.get('/api/tables', (req, res) => {
 });
 
 app.get('/api/ranking', (req, res) => {
-    db.db.all('SELECT * FROM ranking', [], (err, players) => {
+    db.db.all('SELECT * FROM ranking;', [], (err, players) => {
         if (err) {
             res.status(500).json({ error: err.message });
         } else {
             res.json(players);
+        }
+    });
+});
+
+app.get('/api/pairings', (req, res) => {
+    db.db.all('SELECT * FROM pairing;', [], (err, pairings) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(pairings);
+        }
+    });
+});
+
+app.get('/api/count-rounds', (req, res) => {
+    db.db.all('SELECT COUNT(DISTINCT round) FROM pairing;', [], (err, rounds) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(rounds);
         }
     });
 });
@@ -68,18 +94,19 @@ app.post('/api/log', (req, res) => {
 });
 
 app.post('/api/add-player', async (req, res) => {
-    const firstName = req.query.firstName;
-    const lastName = req.query.lastName;
-    const rating = req.query.rating;
-    const club = req.query.club;
-
-    if (!firstName || !lastName) {
-        return res.status(400).json({ error: 'Missing first or last name' });
+    res.set('Date', new Date().toUTCString());
+    res.set('Transfer-Encoding', 'identity');
+    try {
+        const { firstName, lastName, rating, club } = req.body;
+        if (!firstName || !lastName) {
+            return res.status(400).json({ error: 'Missing first or last name' });
+        }
+        const message = await db.addPlayerDB(firstName, lastName, rating, club);
+        res.json({ message: message });
+    } catch (err) {
+        console.error('Internal Server Error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const message = await db.addPlayerDB(firstName, lastName, rating, club);
-
-    res.json({ message: message });
 });
 
 app.post('/api/add-pairing', async (req, res) => {
@@ -105,6 +132,7 @@ app.post('/api/create-pairing-table', async (req, res) => {
     const message = await db.createPairingTableDB();
     res.json({ message: message });
 });
+
 // ------------------------------------------------
 // ------------------- DELETE ---------------------
 // ------------------------------------------------

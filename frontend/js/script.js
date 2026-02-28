@@ -1,9 +1,9 @@
-/*  ____           _                         _   _                           ____                  _                       */
-/* / ___|    ___  | |__   __      __   ___  (_) | |_   ____   ___   _ __    / ___|   _   _   ___  | |_    ___   _ __ ___   */
-/* \___ \   / __| | '_ \  \ \ /\ / /  / _ \ | | | __| |_  /  / _ \ | '__|   \___ \  | | | | / __| | __|  / _ \ | '_ ` _ \  */
-/*  ___) | | (__  | | | |  \ V  V /  |  __/ | | | |_   / /  |  __/ | |       ___) | | |_| | \__ \ | |_  |  __/ | | | | | | */
-/* |____/   \___| |_| |_|   \_/\_/    \___| |_|  \__| /___|  \___| |_|      |____/   \__, | |___/  \__|  \___| |_| |_| |_| */
-/*                                                                                   |___/                                 */
+/*  _____            _              _____   _                         */
+/* |  __ \          | |            / ____| | |                        */
+/* | |  | |  _   _  | | __   ___  | |      | |__     ___   ___   ___  */
+/* | |  | | | | | | | |/ /  / _ \ | |      | '_ \   / _ \ / __| / __| */
+/* | |__| | | |_| | |   <  |  __/ | |____  | | | | |  __/ \__ \ \__ \ */
+/* |_____/   \__,_| |_|\_\  \___|  \_____| |_| |_|  \___| |___/ |___/ */
 
 API = 'http://localhost:3000/api/';
 
@@ -11,13 +11,10 @@ API = 'http://localhost:3000/api/';
 // ---------- html element-generation -------------
 // ------------------------------------------------
 
-async function htmlSetup() {
-    const contentDiv = document.getElementById('content');
-    contentDiv.className = 'content';
-
-    // header
+function htmlSetupHeader() {
     const headerWrap = document.createElement('div');
     headerWrap.className = 'wrap header';
+
     const header = document.createElement('h1');
     header.innerHTML = 'Duke-Chess Turnier-Managment';
     headerWrap.appendChild(header);
@@ -32,11 +29,20 @@ async function htmlSetup() {
 
     logoContainer.appendChild(logo);
     headerWrap.appendChild(logoContainer);
+    return headerWrap;
+}
 
-    // setup
-
+async function htmlSetupSetup() {
     const setupWrap = document.createElement('div');
     setupWrap.className = 'setup';
+    if (
+        localStorage.getItem('websiteState') === 'setup' ||
+        localStorage.getItem('websiteState') === ''
+    ) {
+        setupWrap.style.display = 'block';
+    } else {
+        setupWrap.style.display = 'none';
+    }
 
     //setup.addPlayer.Input
     const addPlayerWrap = document.createElement('div');
@@ -235,18 +241,177 @@ async function htmlSetup() {
     playerTableWrap.appendChild(playerTablePanel);
     setupWrap.appendChild(playerTableWrap);
 
-    window.addEventListener('beforeunload', () => {
-        localStorage.setItem('scrollPosition', window.scrollY);
+    const startTournamentWrap = document.createElement('div');
+    startTournamentWrap.className = 'wrap center';
+    const startTournamentButton = document.createElement('button');
+    startTournamentButton.innerHTML = 'Turnier starten';
+    startTournamentButton.addEventListener('click', () => {
+        createPopup(
+            'Turnier starten',
+            'Möchten Sie wirklich das Turnier starten? In der aktuellen Version können nach dem Start keine Änderungen mehr an den Teilnehmern getätigt werden.',
+            () => {
+                startTournament();
+            },
+        );
     });
+    startTournamentWrap.appendChild(startTournamentButton);
 
-    contentDiv.appendChild(document.createComment('header-div'));
-    contentDiv.appendChild(headerWrap);
+    setupWrap.appendChild(startTournamentWrap);
 
-    contentDiv.appendChild(document.createComment('setup-div'));
-    contentDiv.appendChild(setupWrap);
+    return setupWrap;
+}
 
-    setupAccordions();
-    restoreScrollPosition();
+async function htmlSetupTournament() {
+    try {
+        const tournamentWrap = document.createElement('div');
+        tournamentWrap.className = 'tournament';
+        if (localStorage.getItem('websiteState') === 'tournament') {
+            tournamentWrap.style.display = 'block';
+        } else {
+            tournamentWrap.style.display = 'none';
+            return tournamentWrap;
+        }
+
+        const players = await loadPlayers();
+        if ((await players.length) === 0) return tournamentWrap;
+        const pairings = await loadPairings();
+        if ((await pairings.length) === 0) return tournamentWrap;
+        const roundsRaw = await countRounds();
+        const rounds = roundsRaw[0]['COUNT(DISTINCT round)'];
+
+        const ids = [];
+        players.forEach((player) => {
+            ids.push(player.id);
+        });
+
+        const pairingTableColoumns = ['Brett Nr.', 'Weiß', '', 'Ergebnis', 'Schwarz', ''];
+
+        for (let i = 1; i <= rounds; i++) {
+            const pairingTableWrap = document.createElement('div');
+            pairingTableWrap.className = 'wrap';
+
+            const pairingTableAccordion = document.createElement('div');
+            pairingTableAccordion.className = 'accordion';
+
+            const pairingTableHeader = document.createElement('h2');
+            pairingTableHeader.innerHTML = `Runde ${i}`;
+            pairingTableAccordion.appendChild(pairingTableHeader);
+            pairingTableWrap.appendChild(pairingTableAccordion);
+
+            const pairingTablePanel = document.createElement('div');
+            pairingTablePanel.className = 'panel';
+
+            const pairingTable = document.createElement('table');
+            // Table-Head
+            const pairingTableHead = document.createElement('thead');
+            pairingTableColoumns.forEach((coloumn) => {
+                const pairingTableColoumnHead = document.createElement('th');
+                pairingTableColoumnHead.innerHTML = coloumn;
+                pairingTableHead.appendChild(pairingTableColoumnHead);
+            });
+            pairingTable.appendChild(pairingTableHead);
+
+            // Table-Body
+            const pairingTableBody = document.createElement('tbody');
+            for (let j = 0; j < pairings.length; j++) {
+                let pairing = pairings[j];
+                if (pairing.round != i) {
+                    continue;
+                }
+                const pairingTableRow = document.createElement('tr');
+
+                let pairingTableData = document.createElement('td');
+                pairingTableData.innerHTML = pairing.board;
+                pairingTableRow.appendChild(pairingTableData);
+
+                pairingTableData = document.createElement('td');
+                pairingTableData.innerHTML = players[ids.indexOf(pairing.id1)].firstName;
+                pairingTableRow.appendChild(pairingTableData);
+
+                pairingTableData = document.createElement('td');
+                pairingTableData.innerHTML = players[ids.indexOf(pairing.id1)].lastName;
+                pairingTableRow.appendChild(pairingTableData);
+
+                pairingTableData = document.createElement('td');
+                const matchResultSelectorForm = document.createElement('form');
+                const matchResultSelector = document.createElement('select');
+                matchResultSelector.id = `match_result_${i}.${j}`;
+
+                let matchResultOption = document.createElement('option');
+                matchResultOption.value = 'null';
+                matchResultOption.innerHTML = 'Erg.';
+                matchResultSelector.appendChild(matchResultOption);
+
+                matchResultOption = document.createElement('option');
+                matchResultOption.value = '0';
+                matchResultOption.innerHTML = '0 - 1';
+                matchResultSelector.appendChild(matchResultOption);
+
+                matchResultOption = document.createElement('option');
+                matchResultOption.value = '0.5';
+                matchResultOption.innerHTML = '½ - ½';
+                matchResultSelector.appendChild(matchResultOption);
+
+                matchResultOption = document.createElement('option');
+                matchResultOption.value = '1';
+                matchResultOption.innerHTML = '1 - 0';
+                matchResultSelector.appendChild(matchResultOption);
+
+                matchResultSelectorForm.appendChild(matchResultSelector);
+                pairingTableData.appendChild(matchResultSelectorForm);
+                pairingTableRow.appendChild(pairingTableData);
+
+                pairingTableData = document.createElement('td');
+                pairingTableData.innerHTML = players[ids.indexOf(pairing.id2)].firstName;
+                pairingTableRow.appendChild(pairingTableData);
+
+                pairingTableData = document.createElement('td');
+                pairingTableData.innerHTML = players[ids.indexOf(pairing.id2)].lastName;
+                pairingTableRow.appendChild(pairingTableData);
+
+                pairingTableBody.appendChild(pairingTableRow);
+            }
+            pairingTable.appendChild(pairingTableBody);
+            pairingTablePanel.appendChild(pairingTable);
+            pairingTableWrap.appendChild(pairingTablePanel);
+
+            tournamentWrap.appendChild(pairingTableWrap);
+        }
+
+        return tournamentWrap;
+    } catch (err) {
+        console.error('htmlSetupTournament() failed:', err);
+    }
+}
+
+async function htmlSetup() {
+    try {
+        const contentDiv = document.getElementById('content');
+        contentDiv.className = 'content';
+
+        // header
+        const headerWrap = htmlSetupHeader();
+        contentDiv.appendChild(comment('header-div'));
+        contentDiv.appendChild(headerWrap);
+
+        // setup
+        const setupWrap = await htmlSetupSetup();
+        contentDiv.appendChild(comment('setup-div'));
+        contentDiv.appendChild(setupWrap);
+
+        //tournament
+        const tournamentWrap = await htmlSetupTournament();
+        contentDiv.appendChild(comment('tournament-div'));
+        contentDiv.appendChild(tournamentWrap);
+
+        setupAccordions();
+        window.addEventListener('beforeunload', () => {
+            localStorage.setItem('scrollPosition', window.scrollY);
+        });
+        restoreScrollPosition();
+    } catch (err) {
+        console.error('htmlSetup() failed:', err);
+    }
 }
 
 htmlSetup();
@@ -254,6 +419,15 @@ htmlSetup();
 // ------------------------------------------------
 // ----------------- functions --------------------
 // ------------------------------------------------
+
+function comment(comment) {
+    return document.createComment(comment);
+}
+
+function backToSetup() {
+    localStorage.setItem('websiteState', 'setup');
+    location.reload();
+}
 
 function createPopup(title, message, onConfirm) {
     const popupDiv = document.createElement('div');
@@ -389,19 +563,19 @@ async function addPlayersFromFile(players) {
 
 async function sendPlayerToBackend(firstName, lastName, rating, club) {
     try {
-        const res = await fetch(
-            `${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`,
-            {
-                method: 'POST',
-            },
-        );
+        const res = await fetch(`${API}add-player`, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ firstName, lastName, rating, club }),
+            credentials: 'include',
+        });
         // console.log(`fetched ${API}add-player?firstName=${firstName}&lastName=${lastName}&rating=${rating}&club=${club}`);
 
         if (!res.ok) {
             const text = await res.text();
             const errorMessage = extractErrorFromHTML(text);
             throw new Error(errorMessage);
-            return;
         }
 
         const data = await res.json();
@@ -439,6 +613,38 @@ async function loadRanking() {
         return res.json();
     } catch (err) {
         console.error('loadRanking() failed:', err);
+    }
+}
+
+async function loadPairings() {
+    try {
+        const res = await fetch(`${API}pairings`);
+
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+        }
+
+        return res.json();
+    } catch (err) {
+        console.error('loadPairings() failed:', err);
+    }
+}
+
+async function countRounds() {
+    try {
+        const res = await fetch(`${API}count-rounds`);
+
+        if (!res.ok) {
+            const text = await res.text();
+            const errorMessage = extractErrorFromHTML(text);
+            throw new Error(errorMessage);
+        }
+
+        return res.json();
+    } catch (err) {
+        console.error('countRounds() failed:', err);
     }
 }
 
@@ -577,10 +783,23 @@ async function createFirstRound() {
 
         half = parseInt(ranking.length / 2);
         for (let i = 1; i < half + 1; i++) {
-            console.log(1, i, ranking[i - 1].id, ranking[i + half - 1].id);
+            // console.log(1, i, ranking[i - 1].id, ranking[i + half - 1].id);
             await addPairing(1, i, ranking[i - 1].id, ranking[i + half - 1].id);
         }
     } catch (err) {
         console.error(err);
     }
+}
+
+async function startTournament() {
+    await deleteAllPairings();
+    localStorage.setItem('websiteState', 'tournament');
+    const setupDiv = document.getElementsByClassName('setup');
+    setupDiv.style.display = 'none';
+}
+
+async function dev() {
+    const uniqueRoundsRaw = await countRounds();
+    const uniqueRounds = uniqueRoundsRaw[0]['COUNT(DISTINCT round)'];
+    console.log(uniqueRounds);
 }

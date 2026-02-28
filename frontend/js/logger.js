@@ -40,7 +40,7 @@ console.error = function (...args) {
 
 // Catch global errors
 window.onerror = function (message, source, lineno, colno, error) {
-    const errorMessage = `[GLOBAL ERROR] ${message} (at ${source}:${lineno}:${colno})`;
+    const errorMessage = `[GLOBAL ERROR]   ${message} (at ${source}:${lineno}:${colno})`;
     sendLogToServer(errorMessage);
     return true;
 };
